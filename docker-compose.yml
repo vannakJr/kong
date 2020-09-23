@@ -1,52 +1,35 @@
-version: '2'
-
-services:
-  portainer:
-    image: portainer/portainer-ce
-    restart: always
-    ports:
-      - "9000:9000"
-    command: -H unix:///var/run/docker.sock
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-
-volumes:
-  portainer_data:
-
-
 version: "2"
 
 services:
-  kong-database:  
-    restart: on-failure
-    image: cassandra:2.2.5
+  postgres:
+    image: postgres:9.4
     container_name: kong-database
     ports:
-      - "9042:9042" 
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_DB=kong
     volumes:
-      - "db-data:/var/lib/cassandra"
-  web:  
-    restart: on-failure
+      - "db-data:/var/lib/postgresql/data"
+  web:
     image: mashape/kong:0.8.0
     container_name: kong
+    environment:
+      - DATABASE=postgres
+    restart: always
     ports:
       - "8000:8000"
-      - "8443:8443"
+      - "443:8443"
       - "8001:8001"
       - "7946:7946"
       - "7946:7946/udp"
     links:
-      - kong-database:kong-database
-    environment:
-    - DATABASE=cassandra
-    security_opt:
-      - label:seccomp:unconfined
-  ui:  
-    restart: on-failure
+      - postgres
+  ui:
     image: pgbi/kong-dashboard
+    container_name: kong-dashboard
     ports:
       - "8080:8080"
 
 volumes:
-  db-data:
+  db-data: 
